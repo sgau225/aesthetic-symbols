@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>日常符號帖 ｜ 日韓系社群排版選品店</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream: '#FAF8F5',
+            card: '#FFFFFF',
+            subtle: '#8C857B',
+            main: '#2D2926',
+            borderTone: '#EFECE6'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&display=swap');
+    body { font-family: 'Noto Sans TC', sans-serif; overflow-x: hidden; }
+    .symbol-card { transition: all 0.1s ease; cursor: pointer; }
+    .symbol-card:active { transform: scale(0.92); }
+    .template-variant-btn { white-space: nowrap; transition: all 0.2s; }
+    
+    @media (min-width: 1024px) {
+      .sticky-editor { position: sticky; top: 80px; height: calc(100vh - 120px); }
+    }
+
+    .preview-standard { max-width: 100% !important; }
+    .preview-threads { max-width: 380px !important; margin: 0 auto; border-left: 1px dashed #EFECE6; border-right: 1px dashed #EFECE6; padding: 0 20px !important; background: #fff; }
+    .preview-ig { max-width: 450px !important; margin: 0 auto; border-left: 1px dashed #EFECE6; border-right: 1px dashed #EFECE6; padding: 0 15px !important; background: #fff; }
+    
+    #post-editor { caret-color: #2D2926; padding-bottom: 150px; scrollbar-gutter: stable; }
+    #welcome-screen { position: fixed; inset: 0; background: #FAF8F5; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+    .custom-scroll::-webkit-scrollbar { width: 3px; height: 3px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #EFECE6; border-radius: 10px; }
+  
+    /* 手機版：預設隱藏符號區，以全螢幕彈出方式呈現 */
+    @media (max-width: 1023px) {
+    #symbols-panel {
+        display: none; /* 預設隱藏 */
+        position: fixed;
+        inset: 0;
+        background: #FAF8F5;
+        z-index: 100;
+        padding-top: 80px;
+        overflow-y: auto;
+    }
+    #symbols-panel.active { display: block; }
+    }
+  </style>
+</head>
+
+<!-- 管理員後台 -->
+<div id="admin-panel" class="hidden fixed inset-0 bg-cream z-[200] p-10 overflow-y-auto">
+  <div class="max-w-4xl mx-auto">
+    <div class="flex justify-between mb-6">
+      <h2 class="text-xl font-bold">資料庫後台 (data.json)</h2>
+      <button onclick="document.getElementById('admin-panel').classList.add('hidden')" class="px-4 py-2 border rounded">關閉</button>
+    </div>
+    <textarea id="admin-json-editor" class="w-full h-96 p-4 font-mono text-xs border border-borderTone rounded-lg mb-4"></textarea>
+    <div class="flex gap-4">
+      <button onclick="downloadNewJson()" class="px-6 py-3 bg-main text-white rounded-lg">下載更新後的 JSON</button>
+      <p class="text-xs text-subtle italic">下載後請手動覆蓋專案目錄下的 data.json 檔案</p>
+    </div>
+  </div>
+</div>
+
+<body class="bg-cream text-main antialiased selection:bg-[#EAE5DD]">
+
+  <div id="welcome-screen">
+    <header class="text-center mb-12">
+      <span class="text-xs tracking-[0.4em] text-subtle uppercase font-medium">Aesthetic Symbols Curation</span>
+      <h1 class="text-4xl font-light tracking-[0.2em] mt-3 mb-2">日常符號帖 𓍯</h1>
+      <p class="text-sm text-subtle font-light italic">為社群貼文留點呼吸感</p>
+    </header>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full max-w-2xl px-6" id="welcome-options"></div>
+  </div>
+
+  <header class="fixed top-0 inset-x-0 h-16 bg-cream/80 backdrop-blur-md z-[60] border-b border-borderTone/50 px-6 flex items-center justify-between">
+    <div class="w-24 text-left"><button onclick="goHome()" class="text-[10px] tracking-widest text-subtle hover:text-main transition font-bold uppercase">← Menu</button></div>
+    <h1 class="text-lg font-light tracking-[0.4em] text-main">日常符號帖  𓍯</h1>
+    <div class="w-24 text-right"><span class="text-[9px] text-subtle opacity-40 italic font-serif">Aesthetic Store</span></div>
+  </header>
+
+  <div class="pt-20 max-w-[1440px] mx-auto px-4 pb-20">
+    <div class="flex flex-col lg:flex-row gap-8 items-start">
+      <aside class="w-full lg:w-[520px] shrink-0 sticky-editor">
+        <div class="bg-card border border-borderTone rounded-[2.5rem] shadow-sm p-7 flex flex-col h-full relative">
+          <div class="flex justify-between items-center mb-6">
+            <span class="text-[10px] tracking-[0.2em] text-subtle font-bold uppercase italic">Editor Mode</span>
+            <div class="flex items-center gap-1 bg-cream/50 p-1 rounded-xl border border-borderTone">
+              <button onclick="setPreview('standard', this)" class="preview-btn active px-3 py-1 rounded-lg text-[9px] font-bold bg-main text-white shadow-sm transition">標準</button>
+              <button onclick="setPreview('ig', this)" class="preview-btn px-3 py-1 rounded-lg text-[9px] font-bold text-subtle hover:bg-white transition">IG</button>
+              <button onclick="setPreview('threads', this)" class="preview-btn px-3 py-1 rounded-lg text-[9px] font-bold text-subtle hover:bg-white transition">Threads</button>
+            </div>
+          </div>
+
+          <div class="mb-5 overflow-hidden">
+            <div class="flex gap-2 overflow-x-auto pb-2 custom-scroll" id="template-categories"></div>
+            <div class="flex gap-2 mt-2 overflow-x-auto pb-2 custom-scroll h-10" id="template-variants"></div>
+          </div>
+
+          <textarea id="post-editor" class="flex-1 w-full bg-transparent border-none focus:ring-0 text-main placeholder:text-subtle/30 resize-none text-base leading-relaxed overflow-y-auto custom-scroll p-2" placeholder="挑選一個模版，開始記錄生活..."></textarea>
+          
+          <div class="mt-4 pt-5 border-t border-borderTone relative">
+            <!-- 確認覆蓋提示區 -->
+            <div id="confirm-overlay" class="hidden absolute inset-0 bg-card/95 z-20 flex flex-col items-center justify-center p-6 text-center">
+                <p class="text-sm mb-4 text-main font-medium">更換模版將覆蓋現有內容，確定嗎？</p>
+                <div class="flex gap-3">
+                    <button onclick="confirmTemplate()" class="px-4 py-2 bg-main text-white text-xs rounded-lg">確定</button>
+                    <button onclick="hideConfirm()" class="px-4 py-2 border border-borderTone text-xs rounded-lg text-subtle">取消</button>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center mb-4 text-[10px] tracking-widest text-subtle font-medium">
+              <span>字數：<span id="char-count" class="text-main font-bold ml-1 text-xs">0</span></span>
+              <button onclick="clearEditor()" class="hover:text-red-400 transition uppercase tracking-tighter">Reset</button>
+            </div>
+            <button onclick="copyFullPost()" class="w-full bg-main text-white text-sm py-4 rounded-2xl hover:opacity-90 transition shadow-xl shadow-main/10 font-medium tracking-[0.3em]">轉換並複製全文</button>
+            <p class="text-[9px] text-subtle/50 text-center mt-3 leading-tight italic">(說明：將自動保留排版符號並清除無效換行，直接貼上即可發文)</p>
+          </div>
+        </div>
+      </aside>
+
+      <main id="symbols-panel" class="flex-1 min-w-0">
+          <!-- 內部放一個關閉按鈕，方便手機使用者退出 -->
+        <div class="lg:hidden p-4">
+            <button onclick="toggleMobileSymbols()" class="text-subtle text-xs">← 返回編輯</button>
+        </div>
+        <nav class="sticky top-16 bg-cream/90 backdrop-blur-md py-4 mb-6 border-b border-borderTone/50 z-40 flex gap-2 overflow-x-auto custom-scroll">
+          <button onclick="filterSymbols('all', this)" class="sym-cat-btn shrink-0 px-6 py-2 rounded-full text-xs font-medium bg-main text-white transition shadow-sm">全部</button>
+          <button onclick="filterSymbols('daily', this)" class="sym-cat-btn shrink-0 px-6 py-2 rounded-full text-xs font-medium bg-card text-subtle border border-borderTone hover:border-subtle transition">日常切片</button>
+          <button onclick="filterSymbols('sparkle', this)" class="sym-cat-btn shrink-0 px-6 py-2 rounded-full text-xs font-medium bg-card text-subtle border border-borderTone hover:border-subtle transition">光影星芒</button>
+          <button onclick="filterSymbols('brackets', this)" class="sym-cat-btn shrink-0 px-6 py-2 rounded-full text-xs font-medium bg-card text-subtle border border-borderTone hover:border-subtle transition">溫柔括號</button>
+          <button onclick="filterSymbols('lines', this)" class="sym-cat-btn shrink-0 px-6 py-2 rounded-full text-xs font-medium bg-card text-subtle border border-borderTone hover:border-subtle transition">手帳隔線</button>
+        </nav>
+        <div id="symbols-grid" class="grid grid-cols-5 gap-3 p-4"></div>
+        <div id="mobile-symbol-toggle" class="lg:hidden fixed bottom-6 right-6 z-[90]">
+            <button onclick="toggleMobileSymbols()" class="bg-main text-white p-4 rounded-full shadow-2xl flex items-center gap-2 text-xs tracking-widest">
+            <span>𓍯</span> 符號庫
+            </button>
+        </div>  
+    </main>
+</div>
+
+  <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-main text-white text-[10px] tracking-widest px-6 py-3 rounded-full shadow-2xl opacity-0 pointer-events-none transition-all duration-300 transform translate-y-3 z-[110] flex items-center gap-3"><span id="toast-msg"></span><span id="toast-char" class="font-bold opacity-60"></span></div>
+
+  
+  <script>
+    
+    // 在這裡定義全域變數來儲存資料
+    let symbolsData = {};
+    let templatesData = {};
+
+    // 載入資料的非同步函數
+    async function loadData() {
+        try {
+            const response = await fetch('data.json');
+            const data = await response.json();
+            symbolsData = data.symbols;
+            templatesData = data.templates;
+            
+            // 資料載入後才初始化
+            initWelcomeScreen();
+            initTemplateMenu();
+            renderSymbols();
+        } catch (error) {
+            console.error("資料載入失敗:", error);
+        }
+    }
+
+    const editor = document.getElementById('post-editor');
+    const welcome = document.getElementById('welcome-screen');
+    const welcomeOptions = document.getElementById('welcome-options');
+    const categoriesContainer = document.getElementById('template-categories');
+    const variantsContainer = document.getElementById('template-variants');
+    const charCountDisplay = document.getElementById('char-count');
+    let currentCategory = 'blank';
+    let pendingTemplate = null;
+    let originalTemplateContent = ''; // 新增：記錄當前模板原始內容
+
+    loadData();
+
+    function initWelcomeScreen() {
+      const options = [
+        { cat: 'blank', icon: '📄', title: '自由隨筆', sub: '空白畫布，自由創作' },
+        { cat: 'cafe', icon: '☕︎', title: '週末訪店', sub: '食記與空間紀錄模版' },
+        { cat: 'outfit', icon: '🧺', title: '每日穿搭', sub: 'OOTD 與品牌清單' },
+        { cat: 'vibe', icon: '✧', title: '心情碎片', sub: '金句與情緒模版' },
+        { cat: 'travel', icon: '✈︎', title: '旅行日記', sub: '行前規劃與旅行紀錄' },
+        { cat: 'unboxing', icon: '📦', title: '商品開箱', sub: '心得與細節開箱' }
+      ];
+      welcomeOptions.innerHTML = '';
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = "bg-card border border-borderTone p-8 rounded-[2rem] hover:border-subtle/40 transition-all text-left group shadow-sm";
+        btn.onclick = () => openCategoryFromWelcome(opt.cat);
+        btn.innerHTML = `<div class="text-3xl mb-3">${opt.icon}</div><div class="font-medium text-main tracking-widest">${opt.title}</div><div class="text-[11px] text-subtle mt-2 font-light">${opt.sub}</div>`;
+        welcomeOptions.appendChild(btn);
+      });
+    }
+
+    function initTemplateMenu() {
+      categoriesContainer.innerHTML = '';
+      const labels = { blank: '📄 自由', cafe: '☕︎ 訪店', outfit: '🧺 穿搭', vibe: '✧ 心情', travel: '✈︎ 旅行', unboxing: '📦 開箱' };
+      Object.keys(templatesData).forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = `cat-select-btn shrink-0 text-[10px] px-4 py-1.5 rounded-full border border-borderTone transition-all ${currentCategory === cat ? 'bg-main text-white' : 'bg-card text-subtle'}`;
+        btn.textContent = labels[cat];
+        btn.onclick = () => selectTemplateCategory(cat);
+        categoriesContainer.appendChild(btn);
+      });
+      updateVariants(currentCategory);
+    }
+
+    function selectTemplateCategory(cat) { currentCategory = cat; initTemplateMenu(); }
+    
+    function updateVariants(cat) {
+      variantsContainer.innerHTML = '';
+      templatesData[cat].forEach((t, index) => {
+        const btn = document.createElement('button');
+        btn.className = "template-variant-btn shrink-0 text-[9px] px-4 py-1.5 rounded-lg border border-borderTone bg-card text-subtle hover:border-subtle hover:bg-cream transition-all";
+        btn.textContent = t.n;
+        btn.onclick = () => applyTemplate(cat, index);
+        variantsContainer.appendChild(btn);
+      });
+    }
+
+    function applyTemplate(cat, index) {
+        // 判斷是否「真的有改動過」
+        const isModified = editor.value !== originalTemplateContent;
+
+        if (isModified && editor.value.trim() !== '') {
+            pendingTemplate = {cat, index};
+            document.getElementById('confirm-overlay').classList.remove('hidden');
+        } else {
+            performApply(cat, index);
+        }
+    }
+
+    function confirmTemplate() { performApply(pendingTemplate.cat, pendingTemplate.index); hideConfirm(); }
+    function hideConfirm() { document.getElementById('confirm-overlay').classList.add('hidden'); }
+    function performApply(cat, index) {
+        const content = templatesData[cat][index].c;
+        editor.value = content;
+        originalTemplateContent = content; // 記錄原始內容
+        welcome.style.opacity = '0';
+        welcome.style.pointerEvents = 'none';
+        updateUI();
+    }
+    function openCategoryFromWelcome(cat) { welcome.style.opacity = '0'; welcome.style.pointerEvents = 'none'; selectTemplateCategory(cat); applyTemplate(cat, 0); }
+    function goHome() { welcome.style.opacity = '1'; welcome.style.pointerEvents = 'auto'; }
+    
+    function setPreview(type, btn) {
+      editor.className = "flex-1 w-full bg-transparent border-none focus:ring-0 text-main placeholder:text-subtle/30 resize-none text-base leading-relaxed overflow-y-auto custom-scroll p-2 transition-all duration-300";
+      editor.classList.add(`preview-${type}`);
+      document.querySelectorAll('.preview-btn').forEach(b => { b.classList.remove('bg-main', 'text-white', 'shadow-sm'); b.classList.add('text-subtle'); });
+      btn.classList.add('bg-main', 'text-white', 'shadow-sm');
+    }
+
+    function renderSymbols(filter = 'all') {
+      const grid = document.getElementById('symbols-grid');
+      grid.innerHTML = '';
+      const renderItem = (char, full = false) => {
+        const card = document.createElement('div');
+        card.className = `symbol-card ${full ? 'col-span-3 md:col-span-4 xl:col-span-5' : ''} bg-card border border-borderTone hover:border-subtle/30 rounded-2xl p-4 flex items-center justify-center shadow-sm`;
+        card.innerHTML = `<span class="text-base font-light text-main tracking-widest">${char}</span>`;
+        card.onclick = () => insertSymbol(char);
+        grid.appendChild(card);
+      };
+      if (filter === 'all' || filter === 'daily') symbolsData.daily.forEach(s => renderItem(s));
+      if (filter === 'all' || filter === 'sparkle') symbolsData.sparkle.forEach(s => renderItem(s));
+      if (filter === 'all' || filter === 'brackets') symbolsData.brackets.forEach(s => renderItem(s));
+      if (filter === 'all' || filter === 'lines') symbolsData.lines.forEach(s => renderItem(s.c, s.f));
+    }
+
+    function insertSymbol(char) {
+      const start = editor.selectionStart;
+      editor.value = editor.value.substring(0, start) + char + editor.value.substring(editor.selectionEnd);
+      editor.focus();
+      editor.setSelectionRange(start + char.length, start + char.length);
+      updateUI();
+      showToast(char, "已加入");
+          // 如果在手機端，插入後自動關閉
+      if (window.innerWidth < 1024) {
+      toggleMobileSymbols();
+    }
+    }
+
+    function updateUI() { charCountDisplay.textContent = editor.value.length; }
+    function copyFullPost() { navigator.clipboard.writeText(editor.value).then(() => showToast("✓", "全文已複製")); }
+    function filterSymbols(cat, btn) {
+      renderSymbols(cat);
+      document.querySelectorAll('.sym-cat-btn').forEach(b => { b.classList.remove('bg-main', 'text-white', 'shadow-sm'); b.classList.add('bg-card', 'text-subtle', 'border', 'border-borderTone'); });
+      btn.classList.add('bg-main', 'text-white', 'shadow-sm');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showToast(char, msg) {
+      const toast = document.getElementById('toast');
+      toast.querySelector('#toast-msg').textContent = msg;
+      toast.querySelector('#toast-char').textContent = char;
+      toast.classList.remove('opacity-0', 'translate-y-3', 'pointer-events-none');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      setTimeout(() => { toast.classList.remove('opacity-100', 'translate-y-0'); toast.classList.add('opacity-0', 'translate-y-3', 'pointer-events-none'); }, 1500);
+    }
+
+    function toggleMobileSymbols() {
+    const panel = document.getElementById('symbols-panel');
+    panel.classList.toggle('active');
+    
+    // 如果打開符號庫，隱藏浮動按鈕；關閉時顯示
+    const btn = document.getElementById('mobile-symbol-toggle');
+    btn.classList.toggle('hidden');
+    }
+
+
+    function clearEditor() { if(confirm('確定要清空所有內容嗎？')) { editor.value = ''; updateUI(); } }
+
+    editor.oninput = updateUI;
+
+    // 觸發後台顯示，並將目前記憶體中的資料填入編輯框
+    function openAdminPanel() {
+        const adminPanel = document.getElementById('admin-panel');
+        const editor = document.getElementById('admin-json-editor');
+        
+        // 將當前狀態組合成一個完整的物件
+        const currentData = { symbols: symbolsData, templates: templatesData };
+        editor.value = JSON.stringify(currentData, null, 2);
+        
+        adminPanel.classList.remove('hidden');
+    }
+
+    // 下載 JSON 檔案的功能
+    function downloadNewJson() {
+        const editor = document.getElementById('admin-json-editor');
+        try {
+            // 驗證 JSON 格式
+            JSON.parse(editor.value);
+            
+            const blob = new Blob([editor.value], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "data.json";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert('下載成功！請用此檔案覆蓋專案內的 data.json');
+        } catch (e) {
+            alert('JSON 格式錯誤，請檢查語法！');
+        }
+    }
+
+    // 設定快捷鍵 Ctrl + Shift + A (Mac 上是 Cmd + Shift + A)
+    window.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'A') {
+            e.preventDefault();
+            openAdminPanel();
+        }
+    });
+  </script>
+</body>
+</html>
+
+
+
